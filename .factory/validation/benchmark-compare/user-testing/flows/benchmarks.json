@@ -1,0 +1,83 @@
+{
+  "groupId": "benchmarks",
+  "testedAt": "2026-02-27T10:15:00Z",
+  "credentials": {
+    "account": "N/A",
+    "namespace": "dlnm/benchmarks"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-BENCH-001",
+      "title": "Optimized benchmarks at 10MB",
+      "status": "pass",
+      "steps": [
+        { "action": "Check file exists", "expected": "benchmarks/results/optimized_timing_results.csv exists", "observed": "File exists with 2229 bytes" },
+        { "action": "Verify columns", "expected": "scale, config, stage, n_rows, cb_cols, median_time_sec", "observed": "All expected columns present" },
+        { "action": "Verify 10MB rows", "expected": "Rows for scale=10mb with C1-C5 configs", "observed": "20 rows found: C1-C5 configs with crossbasis, glm, crosspred, crossreduce stages" }
+      ],
+      "evidence": {
+        "terminal_output": "=== 10MB rows (C1-C5) ===\nConfigs found: C1 C2 C3 C4 C5\nStages found: crossbasis glm crosspred crossreduce\nNumber of rows: 20",
+        "csv_sample": "10mb,C1,crossbasis,122736,5,0.034; 10mb,C2,crossbasis,122736,20,0.061; ... (all C1-C5 with 4 stages each)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-BENCH-002",
+      "title": "Optimized benchmarks at 100MB",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify 100MB rows", "expected": "Rows for scale=100mb with C1-C5 configs", "observed": "20 rows found: C1-C5 configs with all 4 stages" }
+      ],
+      "evidence": {
+        "terminal_output": "=== 100MB rows (C1-C5) ===\nConfigs found: C1 C2 C3 C4 C5\nStages found: crossbasis glm crosspred crossreduce\nNumber of rows: 20",
+        "csv_sample": "100mb,C1,crossbasis,1201790,5,0.165; 100mb,C2,crossbasis,1201790,20,0.6295; ... (all C1-C5 with 4 stages each)"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-BENCH-003",
+      "title": "Optimized benchmarks at 1GB",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify 1GB rows", "expected": "Rows for scale=1gb with at least C1-C3 configs", "observed": "12 rows found: C1, C2, C3 configs with all 4 stages each" }
+      ],
+      "evidence": {
+        "terminal_output": "=== 1GB rows (C1-C3+) ===\nConfigs found: C1 C2 C3\nStages found: crossbasis glm crosspred crossreduce\nNumber of rows: 12",
+        "csv_sample": "1gb,C1,crossbasis,12017900,5,0.957; 1gb,C2,crossbasis,12017900,20,7.399; 1gb,C3,crossbasis,12017900,24,7.141"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-BENCH-004",
+      "title": "Optimized benchmarks at 10GB",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify 10GB rows", "expected": "At least C1 config with crossbasis stage (GLM may not fit in memory)", "observed": "1 row found: C1 crossbasis stage with 120179000 rows" }
+      ],
+      "evidence": {
+        "terminal_output": "=== 10GB rows ===\nConfigs found: C1\nStages found: crossbasis\nNumber of rows: 1",
+        "csv_sample": "10gb,C1,crossbasis,120179000,5,18.349"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-BENCH-005",
+      "title": "Measurable speedup at 1GB",
+      "status": "pass",
+      "steps": [
+        { "action": "Get baseline C2 1GB crossbasis time", "expected": "~42 seconds from timing_results.csv", "observed": "41.852 seconds" },
+        { "action": "Get optimized C2 1GB crossbasis time", "expected": "< 21 seconds", "observed": "7.399 seconds" },
+        { "action": "Verify speedup >= 2x", "expected": "Speedup factor >= 2", "observed": "Speedup factor = 5.66x" }
+      ],
+      "evidence": {
+        "terminal_output": "=== C2 1GB Crossbasis Comparison ===\nBaseline R time: 41.852 seconds\nOptimized Rust time: 7.399 seconds\nSpeedup factor: 5.66 x\n\nOptimized time < 21 seconds? TRUE\nSpeedup >= 2x? TRUE",
+        "speedup_comparison_csv": "1gb,C2,crossbasis,41.852,7.399,5.66"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 5 assertions: all 5 passed. Optimized timing results CSV exists with expected columns and contains benchmark data for all required scales (10MB, 100MB, 1GB, 10GB). The 10GB scale correctly shows only crossbasis stage for C1 (as GLM exceeds memory). C2 1GB crossbasis shows 5.66x speedup (7.4s optimized vs 41.9s baseline), far exceeding the 2x requirement."
+}

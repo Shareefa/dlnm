@@ -1,0 +1,73 @@
+{
+  "groupId": "mixmeta",
+  "testedAt": "2026-02-27T10:15:00Z",
+  "credentials": {
+    "account": "N/A",
+    "namespace": "N/A"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-MIX-001",
+      "title": "Mixmeta package functional",
+      "status": "pass",
+      "steps": [
+        { "action": "Run Rscript to load mixmeta library", "expected": "Package loads without error", "observed": "mixmeta 1.2.2 loaded OK" },
+        { "action": "Run dummy 2-city meta-analysis", "expected": "Pooled estimates computed", "observed": "Pooled estimates: y1=0.14, y2=0.1626 with SEs 0.0775 and 0.0738" }
+      ],
+      "evidence": {
+        "terminalOutput": "This is mixmeta 1.2.2. For an overview type: help('mixmeta-package').\nmixmeta package loaded OK\nVersion: 1.2.2\n\nPooled estimates from 2-city dummy meta-analysis:\n       y1        y2 \n0.1400000 0.1625714 \n\nPooled SEs:\n        y1         y2 \n0.07745967 0.07383380 \n\nmixmeta package functional: PASS"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MIX-002",
+      "title": "Two-stage pipeline complete",
+      "status": "pass",
+      "steps": [
+        { "action": "Verify benchmarks/run_mixmeta_pipeline.R script exists", "expected": "Script file exists", "observed": "Script exists at benchmarks/run_mixmeta_pipeline.R (301 lines)" },
+        { "action": "Verify output files exist", "expected": "mixmeta_estimates.csv and mixmeta_timing.csv exist", "observed": "Both files exist with data" },
+        { "action": "Check 10MB results in mixmeta_estimates.csv", "expected": "Pooled coefficients for 10MB scale", "observed": "5 pooled coefficients: [-0.168, -0.043, -0.299, -0.119, -0.135]" }
+      ],
+      "evidence": {
+        "terminalOutput": "10MB scale results found: 5 rows\n\nPooled coefficients for 10MB scale:\n  Coef 1: -0.168434 (SE: 0.015406)\n  Coef 2: -0.042509 (SE: 0.021650)\n  Coef 3: -0.299271 (SE: 0.014069)\n  Coef 4: -0.119468 (SE: 0.041670)\n  Coef 5: -0.135172 (SE: 0.027049)\n\nTiming for 10MB:\n                stage time_sec n_converged\n4     stage1_per_city    3.596          24\n5 stage2_mixmeta_pool    0.233          NA\n6               total    3.829          24\n\nTwo-stage pipeline at 10MB: VERIFIED",
+        "files": ["benchmarks/results/mixmeta_estimates.csv", "benchmarks/results/mixmeta_timing.csv", "benchmarks/run_mixmeta_pipeline.R"]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MIX-003",
+      "title": "Two-stage at multiple scales",
+      "status": "pass",
+      "steps": [
+        { "action": "Check timing results for 10MB scale", "expected": "Timing data present", "observed": "10MB: 24 cities, 3.829s total, 24/24 converged" },
+        { "action": "Check timing results for 100MB scale", "expected": "Timing data present", "observed": "100MB: 235 cities, 28.254s total, 235/235 converged" }
+      ],
+      "evidence": {
+        "terminalOutput": "Scales found in timing: 100mb, 10mb\n\n=== 10MB Scale ===\nCities: 24\nTotal time: 3.829 seconds\nConverged: 24/24\nPooled coefficients: 5\n\n=== 100MB Scale ===\nCities: 235\nTotal time: 28.254 seconds\nConverged: 235/235\nPooled coefficients: 5\n\nMultiple scales verification: PASS (both 10MB and 100MB present)",
+        "files": ["benchmarks/results/mixmeta_timing.csv"]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-MIX-004",
+      "title": "Heterogeneity estimation",
+      "status": "pass",
+      "steps": [
+        { "action": "Check heterogeneity columns exist", "expected": "tau2, tau, I2, Q columns present", "observed": "All 4 columns present" },
+        { "action": "Verify tau2 values are positive (heterogeneity detected)", "expected": "Non-zero between-city variance", "observed": "tau2 ranges from 3.2e-8 to 4.6e-3" },
+        { "action": "Verify tau2 values in reasonable range", "expected": "tau2 < 10 for coefficient-scale data", "observed": "All tau2 values < 0.005" },
+        { "action": "Verify Q statistics computed", "expected": "Cochran Q values present", "observed": "Q values range from 10.4 to 230.6" }
+      ],
+      "evidence": {
+        "terminalOutput": "Heterogeneity columns present:\n  tau2: YES\n  tau: YES\n  I2: YES\n  Q: YES\n\n--- 100MB Scale ---\nCoefficient | tau2 (var) | tau (SD) | I2 (%) | Q stat\n  Coef 1    | 0.000000   | 0.0002   | 0.0   | 102.21\n  Coef 2    | 0.000032   | 0.0056   | 0.0   | 129.15\n  Coef 3    | 0.000194   | 0.0139   | 0.0   | 162.03\n  Coef 4    | 0.000360   | 0.0190   | 0.0   | 130.04\n  Coef 5    | 0.001313   | 0.0362   | 0.0   | 230.65\n\nMean tau2: 0.000380 (between-city variance)\nMean I2: 0.0%\n\n--- 10MB Scale ---\nMean tau2: 0.001126 (between-city variance)\nMean I2: 2.9%\n\nHeterogeneity estimation: PASS",
+        "heterogeneityInterpretation": "tau2 represents between-city variance in coefficient estimates. I2 (0-14.4%) indicates low to minimal heterogeneity. Q statistics are Cochran's Q for testing heterogeneity. All values are within plausible ranges for epidemiological exposure-response meta-analysis.",
+        "files": ["benchmarks/results/mixmeta_estimates.csv"]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 assertions: 4 passed, 0 failed. The mixmeta package is functional (v1.2.2), the two-stage pipeline script exists and produces valid pooled estimates, both 10MB and 100MB scales have complete results with timing, and heterogeneity statistics (tau2, tau, I2, Q) are computed and within plausible ranges."
+}

@@ -1,0 +1,32 @@
+{
+  "flowId": "convergence",
+  "assertions": {
+    "VAL-CONV-001": {
+      "status": "pass",
+      "evidence": "convergence_metrics.csv has columns: approach, config, scale, bias, mse, rmse, rel_bias, ci_coverage. Contains 4 rows for both single_stage and two_stage approaches at 10mb and 100mb scales for C2 config. Bias values: single_stage 10mb=-0.029, two_stage 10mb=-0.010. MSE values present. CI coverage: single_stage=0.02, two_stage=0.76 (10mb). convergence_details.csv has 200 rows with per-temperature estimates for both approaches."
+    },
+    "VAL-CONV-002": {
+      "status": "pass",
+      "evidence": "numerical_convergence.csv has columns: approach, config, scale, iterations, converged, time_sec. Contains 4 rows: single_stage C2 10mb (4 iterations, converged=TRUE, 1.187s), two_stage C2 10mb (4 iterations, converged=TRUE, 3.2s), single_stage C2 100mb (4 iterations, converged=TRUE, 5.785s), two_stage C2 100mb (4 iterations, converged=TRUE, 34.441s). Both approaches converge at both scales."
+    },
+    "VAL-CONV-003": {
+      "status": "pass",
+      "evidence": "Three CSV files exist in benchmarks/results/: convergence_metrics.csv (4 rows, 8 columns: approach, config, scale, bias, mse, rmse, rel_bias, ci_coverage), convergence_details.csv (200 rows, 9 columns: approach, config, scale, temperature, estimated_rr, true_rr, se, ci_lower, ci_upper), numerical_convergence.csv (4 rows, 6 columns: approach, config, scale, iterations, converged, time_sec). All properly structured."
+    },
+    "VAL-CONV-004": {
+      "status": "pass",
+      "evidence": "convergence_metrics.csv contains rmse column (values: 0.1297, 0.0279, 0.1376, 0.0155) and rel_bias column (values: 0.0475, -0.0168, 0.0280, -0.0089) for both approaches at both scales. RMSE provides scale-independent accuracy; relative bias shows bias relative to true values at key percentile temperatures."
+    },
+    "VAL-CROSS-001": {
+      "status": "pass",
+      "evidence": "Full end-to-end pipeline completed at 10MB scale: (1) Package loaded with Rust backend, (2) Data loaded: 122736 rows, 24 cities, (3) Crossbasis done: 122736 x 20, (4) GLM fitted: converged=TRUE, iterations=4, (5) Crosspred done: 50 predictions, (6) Crossreduce done: 55 reduced estimates. All 6 stages succeeded without error."
+    },
+    "VAL-CROSS-002": {
+      "status": "pass",
+      "evidence": "run_convergence_analysis.R loads truth data once (line 95: truth_data_path <- file.path('benchmarks/data', paste0('truth_', scale_name, '.rds'))), stores in dt object, and both approaches use it. Script explicitly states 'BOTH approaches will use: <same path>' (line 119). Single-stage uses crossbasis(dt$temp,...) and two-stage filters dt per city — same source data."
+    }
+  },
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["Execute"]
+}

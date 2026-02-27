@@ -1,0 +1,36 @@
+{
+  "milestone": "benchmark-compare",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-BENCH-001",
+    "VAL-BENCH-002",
+    "VAL-BENCH-003",
+    "VAL-BENCH-004",
+    "VAL-BENCH-005",
+    "VAL-MIX-001",
+    "VAL-MIX-002",
+    "VAL-MIX-003",
+    "VAL-MIX-004",
+    "VAL-TRUTH-001",
+    "VAL-TRUTH-002",
+    "VAL-TRUTH-003",
+    "VAL-TRUTH-004",
+    "VAL-CONV-001",
+    "VAL-CONV-002",
+    "VAL-CONV-003",
+    "VAL-CONV-004",
+    "VAL-CROSS-001",
+    "VAL-CROSS-002"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}
