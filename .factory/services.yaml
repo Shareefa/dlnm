@@ -8,3 +8,10 @@ commands:
   benchmark_10mb: Rscript benchmarks/benchmark_dlnm.R 10mb
   benchmark_100mb: Rscript benchmarks/benchmark_dlnm.R 100mb
   benchmark_1gb: Rscript benchmarks/benchmark_dlnm.R 1gb
+  benchmark_optimized_10mb: Rscript benchmarks/run_optimized_benchmarks.R 10mb
+  benchmark_optimized_100mb: Rscript benchmarks/run_optimized_benchmarks.R 100mb
+  benchmark_optimized_1gb: Rscript benchmarks/run_optimized_benchmarks.R 1gb
+  mixmeta_10mb: Rscript benchmarks/run_mixmeta_pipeline.R 10mb C2
+  mixmeta_100mb: Rscript benchmarks/run_mixmeta_pipeline.R 100mb C2
+  convergence_10mb: Rscript benchmarks/run_convergence_analysis.R 10mb C2
+  convergence_100mb: Rscript benchmarks/run_convergence_analysis.R 100mb C2
