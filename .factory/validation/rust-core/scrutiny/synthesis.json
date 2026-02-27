@@ -1,0 +1,152 @@
+{
+  "milestone": "rust-core",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "Rscript -e \"pkgload::load_all('.', quiet=TRUE); testthat::test_dir('tests/testthat')\"",
+      "exitCode": 0,
+      "details": "111 tests passed, 0 failures, 0 warnings, 0 skips (62.1s)"
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "cd src/rust && cargo build --release",
+      "exitCode": 0,
+      "details": "Rust crate compiles successfully in release mode"
+    },
+    "lint": {
+      "passed": true,
+      "command": "cd src/rust && cargo clippy",
+      "exitCode": 0,
+      "details": "No clippy warnings"
+    }
+  },
+  "reviewsSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "allIssues": [
+    {
+      "featureId": "extendr-setup",
+      "severity": "non_blocking",
+      "description": "rust_dot_product uses assert_eq! which panics on mismatched lengths instead of returning R error",
+      "file": "src/rust/src/lib.rs",
+      "line": 10
+    },
+    {
+      "featureId": "extendr-setup",
+      "severity": "non_blocking",
+      "description": "Tests don't cover error case when rust_dot_product receives different-length vectors",
+      "file": "tests/testthat/test-rust-bridge.R"
+    },
+    {
+      "featureId": "extendr-setup",
+      "severity": "suggestion",
+      "description": "rayon::prelude::* import at function scope rather than module scope",
+      "file": "src/rust/src/lib.rs",
+      "line": 2
+    },
+    {
+      "featureId": "p1-crossbasis-kernel",
+      "severity": "non_blocking",
+      "description": "row_group lookup vector uses O(n) space; binary search over group boundaries could be more memory-efficient for large datasets",
+      "file": "src/rust/src/lib.rs",
+      "line": 83
+    },
+    {
+      "featureId": "p1-crossbasis-kernel",
+      "severity": "suggestion",
+      "description": "var_vals vector allocated fresh for each (row, v) combination; thread-local buffer could reduce allocation pressure",
+      "file": "src/rust/src/lib.rs",
+      "line": 97
+    },
+    {
+      "featureId": "p1-crossbasis-kernel",
+      "severity": "suggestion",
+      "description": "dim[2]==1L check duplicated in Rust dispatch path and R fallback path in crossbasis.R",
+      "file": "R/crossbasis.R",
+      "line": 63
+    },
+    {
+      "featureId": "p2-quadratic-form-se",
+      "severity": "non_blocking",
+      "description": "cumulative_quad_form_se stores overall SE in extra column (n_lag+1) as duplicate of last cumulative column",
+      "file": "src/rust/src/lib.rs",
+      "line": 297
+    },
+    {
+      "featureId": "p2-quadratic-form-se",
+      "severity": "suggestion",
+      "description": "O(p^2) quadratic form could be optimized for very large p, but current p<120 is fine",
+      "file": "src/rust/src/lib.rs",
+      "line": 185
+    },
+    {
+      "featureId": "p2-quadratic-form-se",
+      "severity": "suggestion",
+      "description": "Test data loaded at file scope rather than in setup() block",
+      "file": "tests/testthat/test-rust-quadform.R",
+      "line": 56
+    },
+    {
+      "featureId": "r-integration",
+      "severity": "non_blocking",
+      "description": "cumfit in crosspred Rust path computed via R loop rather than also in Rust; minor optimization opportunity",
+      "file": "R/crosspred.R",
+      "line": 138
+    },
+    {
+      "featureId": "r-integration",
+      "severity": "suggestion",
+      "description": "rust_cum_result tryCatch pattern slightly different from matse_vec pattern; could be consolidated for consistency",
+      "file": "R/crosspred.R",
+      "line": 126
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added .factory/library/rust-gotchas.md documenting: (1) Unicode in Rust doc comments breaks R loading, (2) rle+cumsum group boundary computation pattern, (3) with_disabled_rust() testing pattern for fallback tests",
+      "sourceFeature": "p2-quadratic-form-se, p1-crossbasis-kernel, r-integration"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "skills",
+      "suggestion": "Update rust-worker skill's Step 2 (Write Tests First / TDD) to acknowledge that for Rust functions exposed via extendr, tests can only be written after the Rust function compiles, since R tests calling non-existent .Call() functions fail with 'function not found' rather than meaningful assertion failures. Suggest: 'For Rust functions, write a minimal compiling stub first, then write tests, then implement.'",
+      "evidence": "Features extendr-setup, p1-crossbasis-kernel, and p2-quadratic-form-se all reported this deviation in skillFeedback. All three workers independently noted TDD red-phase is impractical for extendr functions.",
+      "isSystemic": true
+    },
+    {
+      "target": "skills",
+      "suggestion": "Add clarification to rust-worker skill that rextendr::register_extendr() is only needed after Rust code changes (new/renamed/removed functions), not after R-only changes.",
+      "evidence": "Feature r-integration worker noted in skillFeedback that register_extendr() was unnecessary for R-only changes.",
+      "isSystemic": false
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add to Rust Code conventions: 'Do not use Unicode characters in Rust doc comments — use ASCII equivalents (x instead of ×, ^2 instead of ²). R cannot parse Unicode in auto-generated wrapper files.'",
+      "evidence": "Feature p2-quadratic-form-se encountered this bug during development; worker transcript shows debugging and fix.",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "services.yaml test command updated to include pkgload::load_all()",
+      "reason": "already-documented — this change was already applied to services.yaml during extendr-setup"
+    },
+    {
+      "observation": "rextendr::use_extendr() and rextendr::document() unavailable due to gert/usethis",
+      "reason": "already-documented — already in AGENTS.md under 'Known Environment Issues'"
+    },
+    {
+      "observation": "Python PEP 668 externally-managed-environment workaround",
+      "reason": "already-documented — already in AGENTS.md under 'Known Environment Issues'"
+    }
+  ],
+  "previousRound": null
+}
