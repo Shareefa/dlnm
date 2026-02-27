@@ -1,0 +1,10 @@
+*.o
+*.so
+*.dll
+*.dylib
+target
+# Ignore the .cargo dir created by Makevars build at src/.cargo
+/.cargo
+# But track rust/.cargo/config.toml (negation)
+!rust/.cargo/
+!rust/.cargo/config.toml

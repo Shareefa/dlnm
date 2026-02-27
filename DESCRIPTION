@@ -30,3 +30,5 @@ URL: https://github.com/gasparrini/dlnm,
   http://www.ag-myresearch.com/package-dlnm
 License: GPL (>=2)
 LazyData: yes
+Config/rextendr/version: 0.4.2
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.65.0, xz

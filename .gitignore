@@ -2,3 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
+benchmarks/data/
+benchmarks/results/

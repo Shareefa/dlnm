@@ -1,4 +1,10 @@
 #################
+# DYNLIB
+#################
+#
+useDynLib(dlnm, .registration = TRUE)
+#
+#################
 # EXPORTED
 #################
 #
