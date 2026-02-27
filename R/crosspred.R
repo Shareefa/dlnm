@@ -102,8 +102,13 @@ function(basis, model=NULL, coef=NULL, vcov=NULL, model.link=NULL, at=NULL,
 #
   # CREATE LAG-SPECIFIC EFFECTS AND SE
   matfit <- matrix(Xpred%*%coef, length(predvar), length(predlag)) 
-  matse <- matrix(sqrt(pmax(0,rowSums((Xpred%*%vcov)*Xpred))), length(predvar),
-    length(predlag)) 
+  # TRY RUST quad_form_se (P2 optimization: row-wise quadratic form)
+  # Falls back to original R computation if Rust backend is unavailable
+  matse_vec <- tryCatch(
+    as.numeric(quad_form_se(Xpred, vcov)),
+    error = function(e) sqrt(pmax(0,rowSums((Xpred%*%vcov)*Xpred)))
+  )
+  matse <- matrix(matse_vec, length(predvar), length(predlag)) 
 #
   # NAMES
   rownames(matfit) <- rownames(matse) <- predvar
@@ -119,20 +124,49 @@ function(basis, model=NULL, coef=NULL, vcov=NULL, model.link=NULL, at=NULL,
   Xpred <- mkXpred(type,basis,at,predvar,predlag,cen)
 #
   # CREATE OVERALL AND (OPTIONAL) CUMULATIVE EFFECTS AND SE
-  Xpredall <- 0
-  if(cumul) {
-    cumfit <- cumse <- matrix(0,length(predvar),length(predlag))
-  }
-  for (i in seq(length(predlag))) {
-    ind <- seq(length(predvar)) + length(predvar)*(i-1)
-    Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+  # TRY RUST cumulative_quad_form_se (P2 optimization: incremental cumulative SE)
+  # Falls back to original R loop if Rust backend is unavailable
+  n_at <- length(predvar)
+  n_lag <- length(predlag)
+  rust_cum_result <- tryCatch({
+    res <- cumulative_quad_form_se(Xpred, vcov, as.integer(n_at), as.integer(n_lag))
+    res  # n_at x (n_lag + 1) matrix: cols 1..n_lag = cumse, col n_lag+1 = allse
+  }, error = function(e) NULL)
+  if(!is.null(rust_cum_result)) {
+    # Rust succeeded: extract cumulative fit/se and overall fit/se
+    Xpredall <- 0
     if(cumul) {
-      cumfit[, i] <- Xpredall %*% coef
-      cumse[, i] <- sqrt(pmax(0,rowSums((Xpredall%*%vcov)*Xpredall)))
+      cumfit <- matrix(0, n_at, n_lag)
     }
+    for (i in seq(n_lag)) {
+      ind <- seq(n_at) + n_at*(i-1)
+      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+      if(cumul) {
+        cumfit[, i] <- Xpredall %*% coef
+      }
+    }
+    allfit <- as.vector(Xpredall %*% coef)
+    allse <- as.numeric(rust_cum_result[, n_lag + 1])
+    if(cumul) {
+      cumse <- rust_cum_result[, 1:n_lag, drop=FALSE]
+    }
+  } else {
+    # R FALLBACK: original loop-based implementation
+    Xpredall <- 0
+    if(cumul) {
+      cumfit <- cumse <- matrix(0, n_at, n_lag)
+    }
+    for (i in seq(n_lag)) {
+      ind <- seq(n_at) + n_at*(i-1)
+      Xpredall <- Xpredall + Xpred[ind,,drop=FALSE]
+      if(cumul) {
+        cumfit[, i] <- Xpredall %*% coef
+        cumse[, i] <- sqrt(pmax(0,rowSums((Xpredall%*%vcov)*Xpredall)))
+      }
+    }
+    allfit <- as.vector(Xpredall %*% coef)
+    allse <- sqrt(pmax(0,rowSums((Xpredall%*%vcov)*Xpredall)))
   }
-  allfit <- as.vector(Xpredall %*% coef)
-  allse <- sqrt(pmax(0,rowSums((Xpredall%*%vcov)*Xpredall)))
 #
   # NAMES
   names(allfit) <- names(allse) <- predvar
