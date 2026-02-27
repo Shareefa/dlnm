@@ -58,13 +58,38 @@ function(x, lag, argvar=list(), arglag=list(), group=NULL, ...) {
   #   FOR TIME SERIES DATA, COMPUTE THE MATRIX OF LAGGED OCCURRENCES FIRST
   #   IF x WAS ALREADY A MATRIX, JUST RECOMPUTE THE APPROPRIATE DIMENSIONS
   #   NB: ORDER OF TRANSFORMATION IN THE TENSOR CHANGED SINCE VERSION 2.2.4
-  crossbasis <- matrix(0, nrow=dim[1], ncol=ncol(basisvar)*ncol(basislag))
-  for(v in seq(length=ncol(basisvar))) {
-    if(dim[2]==1L) {
-      mat <- as.matrix(Lag(basisvar[, v], seqlag(lag), group=group))
-    } else mat <- matrix(basisvar[,v], ncol=diff(lag)+1)
-    for(l in seq(length=ncol(basislag))) {
-      crossbasis[,ncol(basislag)*(v-1)+l] <- mat %*% (basislag[,l])
+  #
+  # TRY RUST FUSED KERNEL (P1 optimization: no lag matrix materialization)
+  # Falls back to original R loop if Rust backend is unavailable
+  crossbasis <- NULL
+  if(dim[2]==1L) {
+    crossbasis <- tryCatch({
+      # Build group start/end indices (1-based) for the Rust kernel
+      if(!is.null(group)) {
+        grle <- rle(as.integer(group))
+        gends <- cumsum(grle$lengths)
+        gstarts <- c(1L, gends[-length(gends)] + 1L)
+      } else {
+        gstarts <- 1L
+        gends <- as.integer(dim[1])
+      }
+      fused_crossbasis(
+        unclass(basisvar), unclass(basislag),
+        as.integer(lag[1]), as.integer(lag[2]),
+        as.integer(gstarts), as.integer(gends)
+      )
+    }, error=function(e) NULL)
+  }
+  # R FALLBACK: original loop-based implementation
+  if(is.null(crossbasis)) {
+    crossbasis <- matrix(0, nrow=dim[1], ncol=ncol(basisvar)*ncol(basislag))
+    for(v in seq(length=ncol(basisvar))) {
+      if(dim[2]==1L) {
+        mat <- as.matrix(Lag(basisvar[, v], seqlag(lag), group=group))
+      } else mat <- matrix(basisvar[,v], ncol=diff(lag)+1)
+      for(l in seq(length=ncol(basislag))) {
+        crossbasis[,ncol(basislag)*(v-1)+l] <- mat %*% (basislag[,l])
+      }
     }
   }
 #

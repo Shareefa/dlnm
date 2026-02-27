@@ -23,5 +23,25 @@ rust_dot_product <- function(x, y) .Call(wrap__rust_dot_product, x, y)
 #' @return A scalar numeric value representing the sum.
 rust_parallel_sum <- function(x) .Call(wrap__rust_parallel_sum, x)
 
+#' Fused cross-basis kernel: computes sliding-window dot products without
+#' materializing lag matrices.
+#'
+#' For each output element cb[i, nl*(v-1)+l], computes:
+#'   sum_j( basisvar[i-j, v] * basislag[j, l] )
+#' where j ranges from 0 to (lag_max - lag_min), respecting group boundaries.
+#'
+#' Group boundaries: lag windows must not cross city/group boundaries.
+#' NA handling: if any basisvar[i-j, v] is NA (NaN), the output is NA.
+#'
+#' @param basisvar Numeric matrix (n x nv) - variable basis.
+#' @param basislag Numeric matrix (lag_range x nl) - lag basis.
+#' @param lag_min Integer - minimum lag (typically 0).
+#' @param lag_max Integer - maximum lag.
+#' @param group_starts Integer vector - 1-based start indices of each group.
+#' @param group_ends Integer vector - 1-based end indices of each group.
+#' @return Numeric matrix (n x nv*nl) - the cross-basis matrix.
+#' @export
+fused_crossbasis <- function(basisvar, basislag, lag_min, lag_max, group_starts, group_ends) .Call(wrap__fused_crossbasis, basisvar, basislag, lag_min, lag_max, group_starts, group_ends)
+
 
 # nolint end
