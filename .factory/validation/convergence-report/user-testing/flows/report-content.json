@@ -1,0 +1,162 @@
+{
+  "groupId": "report-content",
+  "testedAt": "2026-02-27T10:55:00Z",
+  "credentials": {
+    "account": "none",
+    "namespace": "cli-tests"
+  },
+  "toolsUsed": ["Execute", "Read", "LS", "Glob"],
+  "assertions": [
+    {
+      "id": "VAL-RPT-001",
+      "title": "PNG plots generated",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "List PNG files in benchmarks/results/report/",
+          "expected": "At least 4 PNG plots: speedup comparison, convergence/bias, CI coverage, timing scaling curve",
+          "observed": "Found 5 PNG files: speedup_comparison.png, convergence_bias.png, ci_coverage.png, scaling_curves.png, memory_scaling.png"
+        }
+      ],
+      "evidence": {
+        "fileCheck": "ls output shows 5 PNG files totaling ~480KB",
+        "fileList": [
+          "speedup_comparison.png (86,215 bytes)",
+          "convergence_bias.png (152,137 bytes)",
+          "ci_coverage.png (38,961 bytes)",
+          "scaling_curves.png (127,183 bytes)",
+          "memory_scaling.png (78,479 bytes)"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RPT-002",
+      "title": "Markdown report exists",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Check report.md exists in benchmarks/results/report/",
+          "expected": "File exists",
+          "observed": "report.md exists (25,259 bytes)"
+        },
+        {
+          "action": "Verify required section headers present",
+          "expected": "Sections: Introduction, Optimization Methodology, Benchmark Results, Mixmeta Comparison, Convergence Analysis, Conclusions",
+          "observed": "All 6 required sections present plus 2 additional sections (Memory and Scaling Analysis, Reproducible Pipeline)"
+        }
+      ],
+      "evidence": {
+        "fileCheck": "report.md exists at benchmarks/results/report/report.md",
+        "sectionHeaders": [
+          "## 1. Introduction",
+          "## 2. Optimization Methodology",
+          "## 3. Benchmark Results",
+          "## 4. Memory and Scaling Analysis",
+          "## 5. Mixmeta Comparison",
+          "## 6. Convergence Analysis",
+          "## 7. Conclusions",
+          "## 8. Reproducible Pipeline"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RPT-003",
+      "title": "Report includes benchmark comparison tables",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Check for timing comparison tables in markdown (pipe-separated rows)",
+          "expected": "At least one table showing R baseline vs Rust-optimized timing",
+          "observed": "Multiple tables found with pipe-separated rows comparing R vs Rust timing across scales (10MB, 100MB, 1GB, 10GB) and configs (C1-C5)"
+        }
+      ],
+      "evidence": {
+        "tablePresence": "Found multiple markdown tables with pipe-separated formatting",
+        "exampleTable": "| Scale | Config | R Baseline (sec) | Rust Optimized (sec) | Speedup Factor |\n|-------|--------|-------------------|----------------------|----------------|\n| 10MB | C1 | 0.032 | 0.034 | 0.94x |\n| 10MB | C2 | 0.215 | 0.061 | 3.52x |",
+        "tablesFound": [
+          "Cross-Basis Construction: R vs Rust Timing (Section 3)",
+          "Full Pipeline Timing at 100MB (Section 3)",
+          "Full Pipeline Timing at 1GB (Section 3)",
+          "Model Configurations table (Section 3)",
+          "Rust Kernel Internal Substage Timings (Section 3)"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RPT-004",
+      "title": "Report includes convergence findings",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Locate Convergence Analysis section",
+          "expected": "Section with quantitative results (bias, MSE, or CI coverage)",
+          "observed": "Section 6 'Convergence Analysis' contains detailed quantitative results"
+        },
+        {
+          "action": "Verify numerical values present",
+          "expected": "Bias, MSE, RMSE, and/or CI coverage values",
+          "observed": "Table with Bias (-0.0287, -0.0099, 0.0023, -0.0081), MSE (0.0168, 0.0008, 0.0189, 0.0002), RMSE, Relative Bias, and CI Coverage (0.02, 0.76, 0.02, 0.26)"
+        },
+        {
+          "action": "Verify comparison between single-stage and two-stage mixmeta",
+          "expected": "Interpretation comparing approaches",
+          "observed": "Detailed interpretation including: 'Two-stage approach achieves dramatically lower MSE', 'Single-stage: 2% coverage vs Two-stage: 76% coverage', key findings enumerated"
+        }
+      ],
+      "evidence": {
+        "sectionPresent": "## 6. Convergence Analysis",
+        "metricsTable": "| Approach | Config | Scale | Bias | MSE | RMSE | Relative Bias | CI Coverage |\n| Single-stage | C2 | 10MB | -0.0287 | 0.0168 | 0.1297 | 0.0475 | 0.02 |\n| Two-stage | C2 | 10MB | -0.0099 | 0.0008 | 0.0279 | -0.0168 | 0.76 |",
+        "keyFindings": [
+          "Two-stage RMSE 4.6x better at 10MB, 8.9x better at 100MB",
+          "CI coverage: single-stage 2% vs two-stage 76% (10MB)",
+          "Both approaches converge in 4 IRLS iterations"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RPT-005",
+      "title": "Report includes memory and scaling analysis",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Locate memory efficiency section",
+          "expected": "Rust vs R peak memory comparison with quantitative data",
+          "observed": "Section 4 'Memory and Scaling Analysis' with subsection 'Memory Efficiency: Fused Kernel vs Lag Matrix Materialization'"
+        },
+        {
+          "action": "Verify quantitative memory data",
+          "expected": "Memory values comparing Rust vs R",
+          "observed": "R baseline: 2.0 GB per column (10 GB total for C2 at 1GB), Rust: 1.8 GB output matrix only, ~5x reduction in temporary allocations"
+        },
+        {
+          "action": "Verify scaling behavior section",
+          "expected": "Scaling exponent comparison across stages",
+          "observed": "Scaling behavior table with R baseline vs Rust scaling (10MB→100MB: R 10.0x, Rust 10.3x; 100MB→1GB: R 19.5x, Rust 11.7x; 10MB→1GB: R 194.7x, Rust 121.3x)"
+        }
+      ],
+      "evidence": {
+        "memorySection": "### Memory Efficiency: Fused Kernel vs Lag Matrix Materialization",
+        "memoryValues": {
+          "rBaseline": "2.0 GB per column, up to 10 GB total for C2",
+          "rustOptimized": "1.8 GB output matrix only",
+          "saving": "~5x reduction in temporary allocations"
+        },
+        "scalingSection": "### Scaling Behavior",
+        "scalingData": {
+          "transition_10mb_100mb": { "r": "10.0x", "rust": "10.3x" },
+          "transition_100mb_1gb": { "r": "19.5x", "rust": "11.7x" },
+          "transition_10mb_1gb": { "r": "194.7x", "rust": "121.3x" }
+        },
+        "keyFinding": "R baseline shows super-linear scaling (194.7x for 100x data), Rust shows near-linear scaling (121.3x)"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 5 assertions: all 5 passed. The report directory contains 5 PNG plots (speedup_comparison.png, convergence_bias.png, ci_coverage.png, scaling_curves.png, memory_scaling.png) exceeding the minimum requirement of 4. The markdown report (25KB) contains all required sections including Introduction, Optimization Methodology, Benchmark Results, Memory and Scaling Analysis, Mixmeta Comparison, Convergence Analysis, and Conclusions. Multiple benchmark comparison tables with pipe-separated formatting show R vs Rust timing. The Convergence Analysis section includes detailed quantitative metrics (Bias, MSE, RMSE, CI Coverage) with interpretation comparing single-stage vs two-stage mixmeta. The Memory and Scaling Analysis section includes quantitative memory comparisons (~5x reduction) and scaling behavior data."
+}

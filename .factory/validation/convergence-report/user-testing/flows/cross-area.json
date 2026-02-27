@@ -1,0 +1,175 @@
+{
+  "groupId": "cross-area",
+  "testedAt": "2026-02-27T10:55:00Z",
+  "credentials": {
+    "account": "N/A",
+    "namespace": "N/A"
+  },
+  "toolsUsed": ["Execute", "Read", "Glob", "LS"],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-003",
+      "title": "Report reflects actual data",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Read report.md and identify speedup value '15.65x' for C3 1GB crossbasis",
+          "expected": "Speedup value traceable to source CSV",
+          "observed": "Report states 'C3 at 1GB achieves a remarkable 15.65x speedup (111.7s → 7.1s)' in section 3"
+        },
+        {
+          "action": "Read speedup_comparison.csv and find corresponding row",
+          "expected": "CSV contains matching value",
+          "observed": "CSV row: '1gb,C3,crossbasis,111.737,7.14100000000002,15.65' — R baseline 111.737s, Rust 7.141s, speedup 15.65x exactly matches report"
+        },
+        {
+          "action": "Read report.md and identify speedup value '5.66x' for C2 1GB crossbasis",
+          "expected": "Speedup value traceable to source CSV",
+          "observed": "Report table shows 'C2, 1GB, crossbasis: 5.66x speedup'"
+        },
+        {
+          "action": "Read speedup_comparison.csv for C2 1GB verification",
+          "expected": "CSV contains matching value",
+          "observed": "CSV row: '1gb,C2,crossbasis,41.852,7.399,5.66' — exact match with report"
+        },
+        {
+          "action": "Read report.md and identify convergence metric: Two-stage CI coverage at 10MB = 0.76",
+          "expected": "Convergence metric traceable to source CSV",
+          "observed": "Report section 6 Convergence Analysis table shows 'Two-stage, C2, 10MB: CI Coverage = 0.76'"
+        },
+        {
+          "action": "Read convergence_metrics.csv for CI coverage verification",
+          "expected": "CSV contains matching value",
+          "observed": "CSV row: 'two_stage,C2,10mb,-0.00986332327130743,0.000777181982208735,0.0278779838261079,-0.016828118973259,0.76' — ci_coverage=0.76 exactly matches report"
+        },
+        {
+          "action": "Verify RMSE value: Report shows single-stage 100MB RMSE = 0.1376",
+          "expected": "RMSE value traceable to source CSV",
+          "observed": "CSV shows single_stage,C2,100mb has rmse=0.137573590234556 which rounds to 0.1376 — exact match"
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "N/A (CLI project)",
+        "network": "N/A",
+        "files_compared": [
+          {
+            "report_value": "15.65x speedup for C3 1GB crossbasis",
+            "csv_file": "benchmarks/results/speedup_comparison.csv",
+            "csv_row": "1gb,C3,crossbasis,111.737,7.14100000000002,15.65",
+            "match": true
+          },
+          {
+            "report_value": "5.66x speedup for C2 1GB crossbasis",
+            "csv_file": "benchmarks/results/speedup_comparison.csv",
+            "csv_row": "1gb,C2,crossbasis,41.852,7.399,5.66",
+            "match": true
+          },
+          {
+            "report_value": "Two-stage CI coverage 0.76 at 10MB",
+            "csv_file": "benchmarks/results/convergence_metrics.csv",
+            "csv_column": "ci_coverage",
+            "csv_value": "0.76",
+            "match": true
+          },
+          {
+            "report_value": "Single-stage RMSE 0.1376 at 100MB",
+            "csv_file": "benchmarks/results/convergence_metrics.csv",
+            "csv_column": "rmse",
+            "csv_value": "0.137573590234556",
+            "match": true
+          }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-004",
+      "title": "Reproducible pipeline",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Check report.md for documented pipeline sequence in Section 8",
+          "expected": "Complete step-by-step reproduction guide",
+          "observed": "Section 8 'Reproducible Pipeline' contains 11-step bash sequence: (1) cargo build, (2) install R deps, (3) register extendr, (4) run tests, (5) baseline benchmarks, (6) optimized benchmarks, (7) generate truth data, (8) mixmeta pipeline, (9) convergence analysis, (10) Python plots, (11) verify outputs"
+        },
+        {
+          "action": "Verify Rust build outputs exist",
+          "expected": "Compiled Rust library in src/rust/target/release/",
+          "observed": "File exists: src/rust/target/release/libdlnm.a (17.7MB)"
+        },
+        {
+          "action": "Verify benchmark scripts exist and are executable",
+          "expected": "All scripts referenced in pipeline exist",
+          "observed": "Found: run_optimized_benchmarks.R, run_mixmeta_pipeline.R, run_convergence_analysis.R, generate_truth_data.R, generate_plots.py, benchmark_dlnm.R"
+        },
+        {
+          "action": "Verify benchmark data files exist",
+          "expected": "Pre-generated data at all scales",
+          "observed": "Found: scale_10mb.rds (5MB), scale_100mb.rds (50MB), scale_1gb.rds (501MB), scale_10gb/ directory"
+        },
+        {
+          "action": "Verify truth data files exist (output of generate_truth_data.R)",
+          "expected": "Truth data files generated by pipeline step 7",
+          "observed": "Found: truth_10mb.rds, truth_100mb.rds, truth_1gb.rds, truth_spec.json"
+        },
+        {
+          "action": "Verify benchmark result CSV files exist (output of steps 5-6)",
+          "expected": "Timing CSV files as documented in Expected Output Files table",
+          "observed": "Found: timing_results.csv, optimized_timing_results.csv, speedup_comparison.csv, optimized_substage_timings.csv, scaling_analysis.csv"
+        },
+        {
+          "action": "Verify mixmeta CSV files exist (output of step 8)",
+          "expected": "Mixmeta CSV files as documented",
+          "observed": "Found: mixmeta_timing.csv, mixmeta_estimates.csv, mixmeta_rr_estimates.csv, mixmeta_percity_timing.csv"
+        },
+        {
+          "action": "Verify convergence CSV files exist (output of step 9)",
+          "expected": "Convergence CSV files as documented",
+          "observed": "Found: convergence_metrics.csv, convergence_details.csv, numerical_convergence.csv"
+        },
+        {
+          "action": "Verify PNG plot files exist (output of step 10)",
+          "expected": "5 PNG plots in report/ directory",
+          "observed": "Found: speedup_comparison.png, scaling_curves.png, convergence_bias.png, ci_coverage.png, memory_scaling.png"
+        },
+        {
+          "action": "Verify input/output chaining in scripts",
+          "expected": "Each script reads outputs from previous steps",
+          "observed": "run_convergence_analysis.R reads truth_*.rds (from generate_truth_data.R); generate_plots.py reads speedup_comparison.csv, convergence_metrics.csv, convergence_details.csv (from prior R scripts)"
+        }
+      ],
+      "evidence": {
+        "screenshots": [],
+        "consoleErrors": "N/A (CLI project)",
+        "network": "N/A",
+        "documented_pipeline_steps": [
+          "Step 1: cd src/rust && cargo build --release",
+          "Step 2: Rscript -e install.packages(c('rextendr', 'mixmeta'))",
+          "Step 3: Rscript -e rextendr::register_extendr()",
+          "Step 4: Rscript -e testthat::test_dir('tests/testthat')",
+          "Step 5: Rscript benchmarks/benchmark_dlnm.R {scale}",
+          "Step 6: Rscript benchmarks/run_optimized_benchmarks.R {scale}",
+          "Step 7: Rscript benchmarks/generate_data.R",
+          "Step 8: Rscript benchmarks/run_mixmeta_pipeline.R {scale} {config}",
+          "Step 9: Rscript benchmarks/run_convergence_analysis.R {scale} {config}",
+          "Step 10: .venv/bin/python3 benchmarks/generate_plots.py",
+          "Step 11: Verify outputs via ls and cat"
+        ],
+        "verified_files": {
+          "rust_library": "src/rust/target/release/libdlnm.a",
+          "benchmark_data": ["benchmarks/data/scale_10mb.rds", "benchmarks/data/scale_100mb.rds", "benchmarks/data/scale_1gb.rds", "benchmarks/data/scale_10gb/"],
+          "truth_data": ["benchmarks/data/truth_10mb.rds", "benchmarks/data/truth_100mb.rds", "benchmarks/data/truth_1gb.rds", "benchmarks/data/truth_spec.json"],
+          "timing_csvs": ["benchmarks/results/timing_results.csv", "benchmarks/results/optimized_timing_results.csv", "benchmarks/results/speedup_comparison.csv"],
+          "mixmeta_csvs": ["benchmarks/results/mixmeta_timing.csv", "benchmarks/results/mixmeta_estimates.csv"],
+          "convergence_csvs": ["benchmarks/results/convergence_metrics.csv", "benchmarks/results/convergence_details.csv", "benchmarks/results/numerical_convergence.csv"],
+          "png_plots": ["benchmarks/results/report/speedup_comparison.png", "benchmarks/results/report/scaling_curves.png", "benchmarks/results/report/convergence_bias.png", "benchmarks/results/report/ci_coverage.png", "benchmarks/results/report/memory_scaling.png"]
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions: 2 passed. VAL-CROSS-003 confirmed that report values (speedup 15.65x, 5.66x and CI coverage 0.76) trace directly to source CSV files with exact matches. VAL-CROSS-004 confirmed that Section 8 of the report documents a complete 11-step reproducible pipeline, and all intermediate files exist (Rust library, benchmark data, truth data, timing CSVs, mixmeta CSVs, convergence CSVs, PNG plots)."
+}

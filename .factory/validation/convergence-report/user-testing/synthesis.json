@@ -1,0 +1,24 @@
+{
+  "milestone": "convergence-report",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-RPT-001",
+    "VAL-RPT-002",
+    "VAL-RPT-003",
+    "VAL-RPT-004",
+    "VAL-RPT-005",
+    "VAL-CROSS-003",
+    "VAL-CROSS-004"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [],
+  "previousRound": null
+}
