@@ -32,6 +32,33 @@ The last version officially released on CRAN can be installed directly within R 
 install.packages("dlnm")
 ```
 
+### Rust Optimization
+
+This package includes optional Rust-based optimizations that significantly accelerate the core DLNM computations:
+
+**What's Optimized:**
+- **P1 (Fused Cross-Basis Kernel):** Replaces the nested lag matrix materialization in `crossbasis()` with a fused sliding-window dot product, eliminating O(n × lag_range) temporary allocations.
+- **P2 (Quadratic Form SE):** Accelerates the standard error computation in `crosspred()` with efficient row-wise quadratic form evaluation.
+
+**Performance Gains (Apple Silicon, 12 cores):**
+| Scale | Config | R Baseline | Rust Optimized | Speedup |
+|-------|--------|------------|----------------|---------|
+| 1GB   | C2 (ns, lag 0–21) | 41.9s | 7.4s | **5.66×** |
+| 1GB   | C3 (bs, lag 0–40) | 111.7s | 7.1s | **15.65×** |
+
+**Requirements:**
+- Rust toolchain (≥1.87.0) for optimized path
+- Pure R fallback is automatic when Rust is unavailable — no code changes required
+
+**Running Benchmarks:**
+```r
+# After building the Rust crate: cd src/rust && cargo build --release
+Rscript benchmarks/benchmark_dlnm.R 100mb      # R baseline
+Rscript benchmarks/run_optimized_benchmarks.R 100mb  # Rust optimized
+```
+
+For the full benchmark methodology and results, see the [comprehensive report](benchmarks/results/report/report.md).
+
 ### R code in published articles
 
 Several peer-reviewed articles and documents provide R code illustrating methodological developments of `dlnm` or replicating substantive results using this package. An updated version of the code can be found at the GitHub (httpsgithub.com/gasparrini) or personal web page (http://www.ag-myresearch.com) of the package maintainer.
