@@ -1,0 +1,10 @@
+commands:
+  install_r_deps: Rscript -e "install.packages(c('rextendr', 'mixmeta'), repos='https://cloud.r-project.org', quiet=TRUE)"
+  install_python_deps: python3 -m pip install matplotlib numpy pandas --quiet
+  build_rust: cd src/rust && cargo build --release
+  load_package: Rscript -e "pkgload::load_all('.', quiet=TRUE)"
+  test: Rscript -e "testthat::test_dir('tests/testthat')"
+  check_rust: cd src/rust && cargo test
+  benchmark_10mb: Rscript benchmarks/benchmark_dlnm.R 10mb
+  benchmark_100mb: Rscript benchmarks/benchmark_dlnm.R 100mb
+  benchmark_1gb: Rscript benchmarks/benchmark_dlnm.R 1gb
