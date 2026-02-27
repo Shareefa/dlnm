@@ -15,3 +15,4 @@ commands:
   mixmeta_100mb: Rscript benchmarks/run_mixmeta_pipeline.R 100mb C2
   convergence_10mb: Rscript benchmarks/run_convergence_analysis.R 10mb C2
   convergence_100mb: Rscript benchmarks/run_convergence_analysis.R 100mb C2
+  generate_plots: .venv/bin/python3 benchmarks/generate_plots.py
