@@ -1,0 +1,104 @@
+{
+  "groupId": "p1-correctness",
+  "testedAt": "2026-02-27T00:00:00Z",
+  "credentials": {
+    "account": "N/A - CLI tests",
+    "namespace": "dlnm package"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-P1-001",
+      "title": "P1 correctness for C1 config",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package", "expected": "Package loads without error", "observed": "Package loaded successfully (dlnm 2.4.10)" },
+        { "action": "Load 10MB benchmark data", "expected": "Data loads with 122736 rows", "observed": "Data loaded: 122736 rows" },
+        { "action": "Build C1 basis matrices (lin x poly(4), lag 0-15)", "expected": "Basis matrices created", "observed": "basisvar: 122736x1, basislag: 16x5" },
+        { "action": "Compute Rust fused_crossbasis", "expected": "Rust kernel returns matrix", "observed": "Matrix 122736x5 returned" },
+        { "action": "Compute R reference implementation", "expected": "R loop returns matrix", "observed": "Matrix 122736x5 returned" },
+        { "action": "Compare with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "all.equal(Rust, R) result: TRUE\nDimensions: Rust 122736 5 R 122736 5\nMax abs diff: 8.526513e-14",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-002",
+      "title": "P1 correctness for C2 config",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package", "expected": "Package loads without error", "observed": "Package loaded successfully" },
+        { "action": "Load 10MB benchmark data", "expected": "Data loads with 122736 rows", "observed": "Data loaded: 122736 rows" },
+        { "action": "Build C2 basis matrices (ns(5) x ns(4), lag 0-21)", "expected": "Basis matrices created", "observed": "basisvar: 122736x5, basislag: 22x4" },
+        { "action": "Compute Rust fused_crossbasis", "expected": "Rust kernel returns matrix", "observed": "Matrix 122736x20 returned" },
+        { "action": "Compute R reference implementation", "expected": "R loop returns matrix", "observed": "Matrix 122736x20 returned" },
+        { "action": "Compare with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "all.equal(Rust, R) result: TRUE\nDimensions: Rust 122736 20 R 122736 20\nMax abs diff: 2.664535e-15",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-003",
+      "title": "P1 correctness for C3 config",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package", "expected": "Package loads without error", "observed": "Package loaded successfully" },
+        { "action": "Load 10MB benchmark data", "expected": "Data loads with 122736 rows", "observed": "Data loaded: 122736 rows" },
+        { "action": "Build C3 basis matrices (bs(6) x ns(4), lag 0-40)", "expected": "Basis matrices created", "observed": "basisvar: 122736x6, basislag: 41x4" },
+        { "action": "Compute Rust fused_crossbasis", "expected": "Rust kernel returns matrix", "observed": "Matrix 122736x24 returned" },
+        { "action": "Compute R reference implementation", "expected": "R loop returns matrix", "observed": "Matrix 122736x24 returned" },
+        { "action": "Compare with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "all.equal(Rust, R) result: TRUE\nDimensions: Rust 122736 24 R 122736 24\nMax abs diff: 5.329071e-15",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-004",
+      "title": "P1 correctness for C4 config",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package", "expected": "Package loads without error", "observed": "Package loaded successfully" },
+        { "action": "Load 10MB benchmark data", "expected": "Data loads with 122736 rows", "observed": "Data loaded: 122736 rows" },
+        { "action": "Build C4 basis matrices (ps(10) x ps(5), lag 0-30)", "expected": "Basis matrices created", "observed": "basisvar: 122736x10, basislag: 31x5" },
+        { "action": "Compute Rust fused_crossbasis", "expected": "Rust kernel returns matrix", "observed": "Matrix 122736x50 returned" },
+        { "action": "Compute R reference implementation", "expected": "R loop returns matrix", "observed": "Matrix 122736x50 returned" },
+        { "action": "Compare with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "all.equal(Rust, R) result: TRUE\nDimensions: Rust 122736 50 R 122736 50\nMax abs diff: 3.552714e-15",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-005",
+      "title": "P1 correctness for C5 config",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package", "expected": "Package loads without error", "observed": "Package loaded successfully" },
+        { "action": "Load 10MB benchmark data", "expected": "Data loads with 122736 rows", "observed": "Data loaded: 122736 rows" },
+        { "action": "Build C5 basis matrices (ps(15) x ps(8), lag 0-60)", "expected": "Basis matrices created", "observed": "basisvar: 122736x15, basislag: 61x8" },
+        { "action": "Compute Rust fused_crossbasis", "expected": "Rust kernel returns matrix", "observed": "Matrix 122736x120 returned" },
+        { "action": "Compute R reference implementation", "expected": "R loop returns matrix", "observed": "Matrix 122736x120 returned" },
+        { "action": "Compare with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "all.equal(Rust, R) result: TRUE\nDimensions: Rust 122736 120 R 122736 120\nMax abs diff: 4.440892e-15",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 5 assertions (VAL-P1-001 through VAL-P1-005): all 5 passed. The Rust fused cross-basis kernel produces results matching the R implementation within tolerance=1e-10 for all 5 configs (C1-C5) on the 10MB multi-city dataset. Additionally, the existing testthat test file (test-rust-crossbasis.R) passed all 13 tests covering these configs plus NA handling, group boundaries, and single-group cases."
+}

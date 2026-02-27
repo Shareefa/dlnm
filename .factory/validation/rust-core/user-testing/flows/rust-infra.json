@@ -1,0 +1,58 @@
+{
+  "groupId": "rust-infra",
+  "testedAt": "2026-02-27T00:00:00Z",
+  "credentials": {
+    "account": "N/A - CLI testing",
+    "namespace": "N/A - CLI testing"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-RUST-001",
+      "title": "Extendr crate builds successfully",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run cargo build --release in src/rust/",
+          "expected": "Build completes with exit code 0",
+          "observed": "Finished `release` profile [optimized] target(s) in 0.07s, exit code 0"
+        },
+        {
+          "action": "Load package in R via pkgload::load_all()",
+          "expected": "Package loads without error",
+          "observed": "Package loaded successfully with message: 'This is dlnm 2.4.10. For details: help(dlnm) and vignette('dlnmOverview').'"
+        }
+      ],
+      "evidence": {
+        "terminalOutput": "cargo build --release:\n    Finished `release` profile [optimized] target(s) in 0.07s\n    [Process exited with code 0]\n\nRscript load:\nThis is dlnm 2.4.10. For details: help(dlnm) and vignette('dlnmOverview').\nLoaded OK\n[Process exited with code 0]",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-RUST-002",
+      "title": "R-Rust bridge functional",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Call rust_dot_product(c(1,2,3), c(4,5,6))",
+          "expected": "Returns 32 (1*4 + 2*5 + 3*6)",
+          "observed": "Result: 32"
+        },
+        {
+          "action": "Call rust_parallel_sum(c(1,2,3,4,5))",
+          "expected": "Returns 15 (1+2+3+4+5)",
+          "observed": "Result: 15"
+        }
+      ],
+      "evidence": {
+        "terminalOutput": "rust_dot_product test:\nThis is dlnm 2.4.10. For details: help(dlnm) and vignette('dlnmOverview').\nResult: 32 \nExpected: 32\nPASS\n[Process exited with code 0]\n\nrust_parallel_sum test:\nThis is dlnm 2.4.10. For details: help(dlnm) and vignette('dlnmOverview').\nResult: 15 \nExpected: 15\nPASS\n[Process exited with code 0]",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions: 2 passed, 0 failed. Rust infrastructure is fully functional - cargo build succeeds and R can call Rust functions through the extendr bridge with correct results."
+}

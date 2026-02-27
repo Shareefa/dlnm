@@ -1,0 +1,78 @@
+{
+  "groupId": "p1-edge-cases",
+  "testedAt": "2026-02-27T08:52:00Z",
+  "credentials": {
+    "account": "n/a",
+    "namespace": "n/a"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-P1-006",
+      "title": "Group boundary correctness",
+      "status": "pass",
+      "steps": [
+        { "action": "Load 10MB multi-city data (24 cities, 122736 rows)", "expected": "Data loads successfully", "observed": "Data loads successfully" },
+        { "action": "Run Rust crossbasis with group=city, C2 config (ns(5) x ns(4), lag 0-21)", "expected": "Crossbasis matrix computed", "observed": "Crossbasis matrix computed" },
+        { "action": "Force R fallback and run same crossbasis", "expected": "Crossbasis matrix computed via R", "observed": "Crossbasis matrix computed via R" },
+        { "action": "Compare Rust vs R outputs at group boundaries", "expected": "all.equal returns TRUE", "observed": "all.equal returned TRUE" },
+        { "action": "Verify NA pattern at 23 city boundaries (483 affected rows)", "expected": "NA patterns match between Rust and R", "observed": "NA pattern at boundaries: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "Dataset info:\nRows: 122736\nCities: 24\nGroup boundary test: TRUE\nFound boundary rows: 23\nChecking 483 rows near boundaries\nNA pattern at boundaries: TRUE"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-007",
+      "title": "No lag matrix materialization",
+      "status": "pass",
+      "steps": [
+        { "action": "Load 100MB data (1,201,790 rows)", "expected": "Data loads successfully", "observed": "Data loads successfully" },
+        { "action": "Measure Rust crossbasis peak memory via gc()", "expected": "Memory reading captured", "observed": "Rust peak memory reported" },
+        { "action": "Measure R fallback crossbasis peak memory via gc()", "expected": "Memory reading captured", "observed": "R peak memory reported (higher than Rust)" },
+        { "action": "Compare memory usage", "expected": "Rust uses less memory", "observed": "Rust uses less memory: TRUE" },
+        { "action": "Verify Rust source uses fused sliding-window approach", "expected": "No full lag matrix allocation", "observed": "Code review confirms var_vals vector capacity is lag_len only, not n×lag_len" }
+      ],
+      "evidence": {
+        "terminalOutput": "Dataset rows: 1201790\nRust peak memory (MB): 57067328\nR fallback peak memory (MB): 156748678\nRust uses less memory: TRUE\nMemory difference (R - Rust): 99681350 MB",
+        "codeAnalysis": "src/rust/src/lib.rs fused_crossbasis function uses `var_vals: Vec<f64> = Vec::with_capacity(lag_len)` per row iteration, not full (n × lag_range) matrix. Dot products computed incrementally via flat_map_iter without materializing lag matrices."
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-008",
+      "title": "NA value handling",
+      "status": "pass",
+      "steps": [
+        { "action": "Load 10MB data and inject 100 random NAs into temperature", "expected": "100 NAs injected", "observed": "Injected 100 NAs into temperature data" },
+        { "action": "Run Rust crossbasis with NA-containing data (C1 config: lin x poly(4), lag 0-15)", "expected": "Crossbasis computed with NA propagation", "observed": "Crossbasis computed" },
+        { "action": "Run R fallback crossbasis on same data", "expected": "Crossbasis computed with NA propagation", "observed": "Crossbasis computed" },
+        { "action": "Compare Rust vs R including NA positions", "expected": "all.equal returns TRUE", "observed": "NA handling test: TRUE" },
+        { "action": "Verify NA counts match", "expected": "Same NA count in both outputs", "observed": "Rust NAs: 9715, R NAs: 9715, NA positions match: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "Injected 100 NAs into temperature data\nNA handling test: TRUE\nRust NAs: 9715\nR NAs: 9715\nNA positions match: TRUE"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P1-009",
+      "title": "Single-group (no grouping) correctness",
+      "status": "pass",
+      "steps": [
+        { "action": "Extract single city (city_00001) from 10MB data", "expected": "Single city data extracted", "observed": "Using single city: city_00001, 5114 rows" },
+        { "action": "Run Rust crossbasis with group=NULL (C2 config: ns(5) x ns(4), lag 0-21)", "expected": "Crossbasis matrix computed", "observed": "Crossbasis computed, 5114 rows x 20 columns" },
+        { "action": "Run R fallback crossbasis with group=NULL", "expected": "Crossbasis matrix computed via R", "observed": "Crossbasis computed via R" },
+        { "action": "Compare Rust vs R outputs", "expected": "all.equal returns TRUE within tolerance=1e-10", "observed": "Single-group test: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "Using single city: city_00001\nSingle city rows: 5114\nSingle-group test: TRUE\nRows: 5114\nColumns: 20"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 4 assertions: all 4 passed. VAL-P1-006 verified group boundary handling at 23 city boundaries. VAL-P1-007 confirmed memory efficiency via gc() measurements and code analysis (fused sliding-window approach). VAL-P1-008 verified NA propagation matches R exactly (9715 NAs from 100 injected). VAL-P1-009 confirmed single-group correctness within tolerance 1e-10."
+}

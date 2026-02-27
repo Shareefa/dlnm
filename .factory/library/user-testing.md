@@ -51,3 +51,52 @@ Rscript -e 'pkgload::load_all(".", quiet=TRUE); cat("OK\n")'
 - At 1GB+ scale, benchmarks take several minutes per config
 - C4/C5 configs may not be feasible at 10GB scale due to memory constraints
 - The 10GB dataset is parquet-partitioned, requiring `arrow` package for reading
+
+---
+
+## Flow Validator Guidance: CLI
+
+This project is entirely CLI-based. All testing is done via `Rscript` commands. There is no web UI, API server, or TUI.
+
+### Testing Approach
+- Use `Execute` tool to run `Rscript -e '...'` commands
+- Each assertion is tested by running R code that produces terminal output (TRUE/FALSE, numeric values, etc.)
+- Capture the terminal output as evidence for pass/fail determination
+
+### Isolation Rules
+- All subagents test against the same installed package — this is safe because tests are read-only (no mutations)
+- Each subagent can run `pkgload::load_all(".", quiet=TRUE)` independently
+- Benchmark data in `benchmarks/data/` is read-only shared data
+- No test accounts or namespaces needed — CLI tests don't have state conflicts
+
+### Key Commands
+- Load package: `pkgload::load_all(".", quiet=TRUE)`
+- The 10MB benchmark data: `readRDS("benchmarks/data/scale_10mb.rds")`
+- Rust is already compiled; no need to rebuild
+- Working directory: `/Users/abdullahshareef/Documents/Projects/dlnm`
+
+### Config Definitions (C1-C5)
+These are the basis function configurations used in DLNM testing:
+- **C1**: lin x poly(4), lag 0-15
+- **C2**: ns(5) x ns(4), lag 0-21
+- **C3**: bs(6) x ns(4), lag 0-40
+- **C4**: ps(10) x ps(5), lag 0-30
+- **C5**: ps(15) x ps(8), lag 0-60
+
+### Report Format
+Write flow report as JSON to the specified path with this structure:
+```json
+{
+  "flowId": "<group-id>",
+  "assertions": {
+    "<assertion-id>": {
+      "status": "pass|fail|blocked",
+      "evidence": "terminal output or observation",
+      "reason": "why it passed/failed/blocked (if not pass)"
+    }
+  },
+  "frictions": [],
+  "blockers": [],
+  "toolsUsed": ["Execute"]
+}
+```

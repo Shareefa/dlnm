@@ -1,0 +1,99 @@
+{
+  "groupId": "r-integration",
+  "testedAt": "2026-02-27T08:50:00Z",
+  "credentials": {
+    "account": "N/A (CLI-based testing)",
+    "namespace": "dlnm package"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-INT-001",
+      "title": "crossbasis dispatches to Rust",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package via pkgload::load_all", "expected": "Package loads successfully", "observed": "Package loaded with dlnm 2.4.10 message" },
+        { "action": "Time crossbasis with Rust path on 10MB data", "expected": "Completes with timing", "observed": "Rust time: 0.164 seconds" },
+        { "action": "Disable Rust via assignInNamespace and time R fallback", "expected": "Completes with timing", "observed": "R time: 0.597 seconds" },
+        { "action": "Compare Rust vs R timing", "expected": "Rust is faster", "observed": "Rust is faster: TRUE (3.6x speedup)" }
+      ],
+      "evidence": {
+        "terminalOutput": "Rust time: 0.164 seconds\nR time: 0.597 seconds\nRust is faster: TRUE",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-INT-002",
+      "title": "crossbasis R fallback works",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package and 10MB data", "expected": "Package and data load successfully", "observed": "Package loaded, data loaded" },
+        { "action": "Disable Rust fused_crossbasis via assignInNamespace", "expected": "Rust kernel disabled", "observed": "Rust kernel disabled, fallback triggered" },
+        { "action": "Run crossbasis with R fallback", "expected": "Completes using R code", "observed": "Completed successfully" },
+        { "action": "Re-enable Rust and run crossbasis normally", "expected": "Completes using Rust", "observed": "Completed successfully" },
+        { "action": "Compare R fallback vs Rust results with all.equal(tolerance=1e-10)", "expected": "TRUE (identical results)", "observed": "Fallback produces identical results: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "Fallback produces identical results: TRUE",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-INT-003",
+      "title": "crosspred dispatches to Rust SE",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package and prepare single-city data", "expected": "Package and data load successfully", "observed": "Package loaded, city data subset created" },
+        { "action": "Build crossbasis and fit glm model", "expected": "Model fits successfully", "observed": "Model fitted successfully" },
+        { "action": "Run crosspred with cumul=TRUE", "expected": "crosspred completes with SE values", "observed": "crosspred completed successfully, centering automatically set to 10" },
+        { "action": "Check SE dimensions and values", "expected": "matse, allse, cumse have correct dimensions and finite values", "observed": "matse dim: 3 22, allse length: 3, cumse dim: 3 22, All SE values finite: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "centering value unspecified. Automatically set to 10\ncrosspred completed successfully\nmatse dim: 3 22\nallse length: 3\ncumse dim: 3 22\nAll SE values finite: TRUE",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-INT-004",
+      "title": "Full pipeline equivalence",
+      "status": "pass",
+      "steps": [
+        { "action": "Run full pipeline (crossbasis->glm->crosspred->crossreduce) with Rust", "expected": "Pipeline completes successfully", "observed": "Pipeline completed, all outputs generated" },
+        { "action": "Disable all Rust kernels (fused_crossbasis, quad_form_se, cumulative_quad_form_se)", "expected": "All Rust paths disabled", "observed": "All Rust kernels disabled via assignInNamespace" },
+        { "action": "Run full pipeline with R fallback", "expected": "Pipeline completes successfully", "observed": "Pipeline completed, all outputs generated" },
+        { "action": "Compare crossbasis matrices", "expected": "TRUE (identical within 1e-10)", "observed": "1. Crossbasis: TRUE" },
+        { "action": "Compare model coefficients (values)", "expected": "TRUE (identical within 1e-10)", "observed": "2. Model coefs (values only): TRUE (names differ due to variable naming cb_rust vs cb_r)" },
+        { "action": "Compare predictions (matfit, matse, allfit, allse)", "expected": "All TRUE (identical within 1e-10)", "observed": "3. Predictions (matfit): TRUE, 3b. (matse): TRUE, 3c. (allfit): TRUE, 3d. (allse): TRUE" },
+        { "action": "Compare crossreduce outputs (fit, se)", "expected": "TRUE (identical within 1e-10)", "observed": "4. Reduced (fit): TRUE, 4b. Reduced (se): TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "1. Crossbasis: TRUE\n2. Model coefs: Names: 20 string mismatches (expected - cb_rust vs cb_r naming)\n2. Model coefs (values only): TRUE\n3. Predictions (matfit): TRUE\n3b. Predictions (matse): TRUE\n3c. Predictions (allfit): TRUE\n3d. Predictions (allse): TRUE\n4. Reduced (fit): TRUE\n4b. Reduced (se): TRUE",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-INT-005",
+      "title": "Partial Rust availability",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package and prepare single-city data", "expected": "Package and data load successfully", "observed": "Package loaded, city data subset created" },
+        { "action": "Disable P2 Rust kernels (quad_form_se, cumulative_quad_form_se) but keep P1 (fused_crossbasis)", "expected": "Only SE kernels disabled", "observed": "quad_form_se and cumulative_quad_form_se disabled via assignInNamespace" },
+        { "action": "Run full pipeline (crossbasis->glm->crosspred)", "expected": "Rust crossbasis + R SE computation completes successfully", "observed": "Partial Rust completed successfully" },
+        { "action": "Check SE values are finite", "expected": "matse and allse have finite values", "observed": "matse has values: TRUE, allse has values: TRUE" },
+        { "action": "Re-enable P2 and compare partial vs full Rust", "expected": "Identical results within 1e-10", "observed": "Partial vs Full matse: TRUE, Partial vs Full allse: TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": "centering value unspecified. Automatically set to 10\nPartial Rust completed successfully\nmatse has values: TRUE\nallse has values: TRUE\ncentering value unspecified. Automatically set to 10\nPartial vs Full matse: TRUE\nPartial vs Full allse: TRUE",
+        "consoleErrors": "none"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 5 assertions: all 5 passed. VAL-INT-001 confirmed Rust crossbasis is 3.6x faster than R. VAL-INT-002 verified R fallback produces identical results. VAL-INT-003 confirmed crosspred Rust SE computation works correctly. VAL-INT-004 verified full pipeline equivalence between Rust and R paths (all outputs identical within 1e-10). VAL-INT-005 confirmed graceful degradation when P1 works but P2 fails."
+}

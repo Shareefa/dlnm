@@ -1,0 +1,72 @@
+{
+  "groupId": "p2-se",
+  "testedAt": "2026-02-27T00:00:00Z",
+  "credentials": {
+    "account": "N/A (CLI-based)",
+    "namespace": "dlnm"
+  },
+  "toolsUsed": ["Execute"],
+  "assertions": [
+    {
+      "id": "VAL-P2-001",
+      "title": "Lag-specific SE correctness",
+      "status": "pass",
+      "steps": [
+        { "action": "Load dlnm package with pkgload::load_all()", "expected": "Package loads", "observed": "Package loaded successfully" },
+        { "action": "Create crossbasis C2 (ns(5) x ns(4), lag 0-21)", "expected": "Crossbasis created", "observed": "Crossbasis created successfully" },
+        { "action": "Fit GLM model", "expected": "Model fitted", "observed": "Model fitted successfully" },
+        { "action": "Run crosspred with Rust path", "expected": "Rust SE computation completes", "observed": "Rust crosspred completed (5x22 matse matrix)" },
+        { "action": "Force R fallback and run crosspred", "expected": "R SE computation completes", "observed": "R fallback crosspred completed" },
+        { "action": "Compare matse with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" },
+        { "action": "Repeat with C1 config (lin x poly(4), lag 0-15)", "expected": "TRUE", "observed": "TRUE (3x16 matse matrix)" }
+      ],
+      "evidence": {
+        "terminalOutput": [
+          "VAL-P2-001 Lag-specific SE (C2): TRUE",
+          "  matse dimensions: 5x22",
+          "VAL-P2-001 Lag-specific SE (C1): TRUE",
+          "  matse dimensions: 3x16"
+        ],
+        "configs_tested": ["C2 (ns(5) x ns(4), lag 0-21)", "C1 (lin x poly(4), lag 0-15)"]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P2-002",
+      "title": "Cumulative SE correctness",
+      "status": "pass",
+      "steps": [
+        { "action": "Using same model setup as VAL-P2-001 C2 config", "expected": "Model available", "observed": "Model available" },
+        { "action": "Compare cumse from Rust vs R path with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": [
+          "VAL-P2-002 Cumulative SE (C2): TRUE",
+          "  cumse dimensions: 5x22",
+          "VAL-P2-002 Cumulative SE (C1): TRUE"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-P2-003",
+      "title": "Overall SE correctness",
+      "status": "pass",
+      "steps": [
+        { "action": "Using same model setup as VAL-P2-001 C2 config", "expected": "Model available", "observed": "Model available" },
+        { "action": "Compare allse from Rust vs R path with all.equal(tolerance=1e-10)", "expected": "TRUE", "observed": "TRUE" }
+      ],
+      "evidence": {
+        "terminalOutput": [
+          "VAL-P2-003 Overall SE (C2): TRUE",
+          "  allse length: 5",
+          "VAL-P2-003 Overall SE (C1): TRUE"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 3 assertions: 3 passed. All Rust P2 SE computations (lag-specific, cumulative, overall) match R implementation within tolerance=1e-10 for both C1 and C2 configs."
+}
