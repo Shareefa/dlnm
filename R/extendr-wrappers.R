@@ -43,5 +43,48 @@ rust_parallel_sum <- function(x) .Call(wrap__rust_parallel_sum, x)
 #' @export
 fused_crossbasis <- function(basisvar, basislag, lag_min, lag_max, group_starts, group_ends) .Call(wrap__fused_crossbasis, basisvar, basislag, lag_min, lag_max, group_starts, group_ends)
 
+#' Compute row-wise quadratic form SE: sqrt(max(0, x_i' V x_i)) for each row i.
+#'
+#' This replaces the R pattern: sqrt(pmax(0, rowSums((X %*% V) * X)))
+#' without materializing the full (m x p) temporary matrix X %*% V.
+#'
+#' For each row i of xpred (length p), computes:
+#'   se_i = sqrt(max(0, sum_j sum_k x_ij * V_jk * x_ik))
+#'
+#' @param xpred Numeric matrix (m x p) - prediction matrix.
+#' @param vcov Numeric matrix (p x p) - variance-covariance matrix.
+#' @return Numeric vector of length m - the standard errors.
+#' @export
+quad_form_se <- function(xpred, vcov) .Call(wrap__quad_form_se, xpred, vcov)
+
+#' Compute incremental cumulative SE for crosspred cumulative predictions.
+#'
+#' In the R code (crosspred.R lines 126-135), the pattern is:
+#'   Xpredall <- 0
+#'   for (i in seq(length(predlag))) {
+#'     ind <- seq(n_at) + n_at*(i-1)
+#'     Xpredall <- Xpredall + Xpred[ind, , drop=FALSE]
+#'     cumse[, i] <- sqrt(pmax(0, rowSums((Xpredall %*% vcov) * Xpredall)))
+#'   }
+#'   allse <- sqrt(pmax(0, rowSums((Xpredall %*% vcov) * Xpredall)))
+#'
+#' This Rust function computes both cumse (n_at x n_lag) and allse (n_at)
+#' incrementally without materializing full temporaries.
+#'
+#' The xpred matrix has (n_at * n_lag) rows and p columns, where rows are
+#' organized as n_lag blocks of n_at rows each.
+#'
+#' Returns an R matrix with (n_at) rows and (n_lag + 1) columns:
+#'   - Columns 1..n_lag contain cumulative SE at each lag step
+#'   - Column n_lag+1 contains the overall (final) SE (same as last cumulative column)
+#'
+#' @param xpred Numeric matrix ((n_at * n_lag) x p) - prediction matrix.
+#' @param vcov Numeric matrix (p x p) - variance-covariance matrix.
+#' @param n_at Integer - number of prediction points (at values).
+#' @param n_lag Integer - number of lag steps.
+#' @return Numeric matrix (n_at x (n_lag + 1)) - cumulative SE + overall SE.
+#' @export
+cumulative_quad_form_se <- function(xpred, vcov, n_at, n_lag) .Call(wrap__cumulative_quad_form_se, xpred, vcov, n_at, n_lag)
+
 
 # nolint end

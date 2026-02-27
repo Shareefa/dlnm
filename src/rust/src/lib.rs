@@ -159,6 +159,153 @@ fn fused_crossbasis(
     result.into_robj()
 }
 
+/// Compute row-wise quadratic form SE: sqrt(max(0, x_i' V x_i)) for each row i.
+///
+/// This replaces the R pattern: sqrt(pmax(0, rowSums((X %*% V) * X)))
+/// without materializing the full (m x p) temporary matrix X %*% V.
+///
+/// For each row i of xpred (length p), computes:
+///   se_i = sqrt(max(0, sum_j sum_k x_ij * V_jk * x_ik))
+///
+/// @param xpred Numeric matrix (m x p) - prediction matrix.
+/// @param vcov Numeric matrix (p x p) - variance-covariance matrix.
+/// @return Numeric vector of length m - the standard errors.
+/// @export
+#[extendr]
+fn quad_form_se(xpred: RMatrix<f64>, vcov: RMatrix<f64>) -> Doubles {
+    let m = xpred.nrows();
+    let p = xpred.ncols();
+
+    assert_eq!(vcov.nrows(), p, "vcov nrows ({}) must equal xpred ncols ({})", vcov.nrows(), p);
+    assert_eq!(vcov.ncols(), p, "vcov must be square ({}x{})", vcov.nrows(), vcov.ncols());
+
+    let x_data = xpred.data();   // column-major: x_data[row + col * m]
+    let v_data = vcov.data();    // column-major: v_data[row + col * p]
+
+    // Compute row-wise x_i' V x_i using rayon for parallelism
+    let results: Vec<f64> = (0..m)
+        .into_par_iter()
+        .map(|i| {
+            let mut qf = 0.0_f64;
+            // For each pair (j, k), accumulate x_ij * V_jk * x_ik
+            // Optimize: loop over j, compute (V * x_i) for column j, then dot with x_ij
+            for j in 0..p {
+                let x_ij = x_data[i + j * m];
+                let mut vx_j = 0.0_f64;
+                for k in 0..p {
+                    vx_j += v_data[j + k * p] * x_data[i + k * m];
+                }
+                qf += x_ij * vx_j;
+            }
+            // pmax(0, ...) clamping for near-singular vcov
+            if qf < 0.0 { 0.0_f64 } else { qf.sqrt() }
+        })
+        .collect();
+
+    Doubles::from_values(results)
+}
+
+/// Compute incremental cumulative SE for crosspred cumulative predictions.
+///
+/// In the R code (crosspred.R lines 126-135), the pattern is:
+///   Xpredall <- 0
+///   for (i in seq(length(predlag))) {
+///     ind <- seq(n_at) + n_at*(i-1)
+///     Xpredall <- Xpredall + Xpred[ind, , drop=FALSE]
+///     cumse[, i] <- sqrt(pmax(0, rowSums((Xpredall %*% vcov) * Xpredall)))
+///   }
+///   allse <- sqrt(pmax(0, rowSums((Xpredall %*% vcov) * Xpredall)))
+///
+/// This Rust function computes both cumse (n_at x n_lag) and allse (n_at)
+/// incrementally without materializing full temporaries.
+///
+/// The xpred matrix has (n_at * n_lag) rows and p columns, where rows are
+/// organized as n_lag blocks of n_at rows each.
+///
+/// Returns an R matrix with (n_at) rows and (n_lag + 1) columns:
+///   - Columns 1..n_lag contain cumulative SE at each lag step
+///   - Column n_lag+1 contains the overall (final) SE (same as last cumulative column)
+///
+/// @param xpred Numeric matrix ((n_at * n_lag) x p) - prediction matrix.
+/// @param vcov Numeric matrix (p x p) - variance-covariance matrix.
+/// @param n_at Integer - number of prediction points (at values).
+/// @param n_lag Integer - number of lag steps.
+/// @return Numeric matrix (n_at x (n_lag + 1)) - cumulative SE + overall SE.
+/// @export
+#[extendr]
+fn cumulative_quad_form_se(
+    xpred: RMatrix<f64>,
+    vcov: RMatrix<f64>,
+    n_at: i32,
+    n_lag: i32,
+) -> Robj {
+    let n_at = n_at as usize;
+    let n_lag = n_lag as usize;
+    let p = xpred.ncols();
+    let total_rows = xpred.nrows();
+
+    assert_eq!(total_rows, n_at * n_lag,
+        "xpred nrows ({}) must equal n_at * n_lag ({})", total_rows, n_at * n_lag);
+    assert_eq!(vcov.nrows(), p, "vcov nrows ({}) must equal xpred ncols ({})", vcov.nrows(), p);
+    assert_eq!(vcov.ncols(), p, "vcov must be square ({}x{})", vcov.nrows(), vcov.ncols());
+
+    let x_data = xpred.data();   // column-major: x_data[row + col * total_rows]
+    let v_data = vcov.data();    // column-major: v_data[row + col * p]
+
+    // Output: n_at rows x (n_lag + 1) columns
+    // Columns 0..n_lag-1 = cumulative SE at each lag step
+    // Column n_lag = overall SE (= same as last cumulative column)
+    let out_cols = n_lag + 1;
+
+    // For each "at" row, we maintain an accumulated vector xpredall_i of length p
+    // and at each lag step, add the corresponding slice, then compute quadratic form.
+    //
+    // Parallelize across "at" rows
+    let results: Vec<f64> = (0..n_at)
+        .into_par_iter()
+        .flat_map_iter(|i| {
+            let mut xpredall = vec![0.0_f64; p];
+            let mut row_results = vec![0.0_f64; out_cols];
+
+            for (lag_step, cum_se) in row_results.iter_mut().enumerate().take(n_lag) {
+                // Row index in xpred for this (at_index=i, lag_step)
+                let src_row = i + n_at * lag_step;
+
+                // Accumulate: xpredall[k] += xpred[src_row, k]
+                for k in 0..p {
+                    xpredall[k] += x_data[src_row + k * total_rows];
+                }
+
+                // Compute quadratic form: xpredall' V xpredall
+                let mut qf = 0.0_f64;
+                for j in 0..p {
+                    let mut vx_j = 0.0_f64;
+                    for k in 0..p {
+                        vx_j += v_data[j + k * p] * xpredall[k];
+                    }
+                    qf += xpredall[j] * vx_j;
+                }
+
+                // pmax(0, ...) clamping and sqrt
+                *cum_se = if qf < 0.0 { 0.0 } else { qf.sqrt() };
+            }
+
+            // Overall SE = final accumulated (same as last lag step)
+            row_results[n_lag] = row_results[n_lag - 1];
+
+            row_results.into_iter()
+        })
+        .collect();
+
+    // results is row-major: results[i * out_cols + col]
+    // Convert to column-major R matrix
+    let result = RMatrix::new_matrix(n_at, out_cols, |row, col| {
+        results[row * out_cols + col]
+    });
+
+    result.into_robj()
+}
+
 // Macro to generate exports.
 // This ensures exported functions are registered with R.
 // See corresponding C code in `entrypoint.c`.
@@ -167,4 +314,6 @@ extendr_module! {
     fn rust_dot_product;
     fn rust_parallel_sum;
     fn fused_crossbasis;
+    fn quad_form_se;
+    fn cumulative_quad_form_se;
 }
