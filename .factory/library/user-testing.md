@@ -34,6 +34,11 @@ Rscript benchmarks/benchmark_dlnm.R 10mb C1,C2
 Rscript -e 'pkgload::load_all(".", quiet=TRUE); cat("OK\n")'
 ```
 
+### Python (use project venv)
+```bash
+.venv/bin/python3 benchmarks/generate_plots.py
+```
+
 ## Validation Approach
 
 - **Correctness:** Run `all.equal(rust_result, r_result, tolerance=1e-10)` for all configs

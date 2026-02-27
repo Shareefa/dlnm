@@ -52,7 +52,7 @@ Use for features involving:
    - **No lag matrix materialization** (P1): Compute sliding-window dot products directly.
    - **NA propagation**: Match R's NA behavior exactly — NAs in lag window produce NA output.
    - **Group boundaries**: Lag windows must NOT cross city/group boundaries.
-5. After implementation: `rextendr::document()` to compile and generate R wrappers.
+5. After implementation: `rextendr::register_extendr()` to generate R wrappers, then `pkgload::load_all(".")` to reload. Do NOT use `rextendr::document()` — it requires devtools/usethis/gert which are unavailable on this system.
 
 ### Step 4: Wire into R Functions
 

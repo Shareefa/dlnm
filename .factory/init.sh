@@ -16,11 +16,15 @@ if (length(missing) > 0) {
 }
 '
 
-# Install Python packages if missing
-echo "Checking Python packages..."
-python3 -c "import matplotlib, numpy, pandas" 2>/dev/null || {
-  echo "Installing Python packages..."
-  python3 -m pip install matplotlib numpy pandas --quiet
+# Install Python packages in venv (PEP 668 requires venv on externally-managed Python)
+echo "Checking Python venv..."
+if [ ! -d ".venv" ]; then
+  echo "Creating Python venv..."
+  python3 -m venv .venv
+fi
+.venv/bin/python3 -c "import matplotlib, numpy, pandas" 2>/dev/null || {
+  echo "Installing Python packages in venv..."
+  .venv/bin/pip install matplotlib numpy pandas --quiet
 }
 
 # Verify Rust toolchain

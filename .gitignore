@@ -4,3 +4,8 @@
 .Ruserdata
 benchmarks/data/
 benchmarks/results/
+.venv/
+.DS_Store
+src/*.o
+src/*.so
+src/*.dll
